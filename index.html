@@ -12,12 +12,13 @@
         padding-bottom: 3rem;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, sans-serif;
+        background-color: #000000;
       }
 
       #form {
         background: rgba(0, 0, 0, 0.15);
         padding: 0.25rem;
-        position: fixed;
+        /* position: fixed; */
         bottom: 0;
         left: 0;
         right: 0;
@@ -85,11 +86,14 @@
         margin: 5px;
       }
       /*p escriebiendo*/
+      p {
+        color: white;
+      }
 
       /* Estilo para los mensajes del sistema */
       .system-message {
         align-self: flex-start; /* Alinear mensajes del sistema a la izquierda */
-        background-color: #ff0734;
+        background-color: #e90303c5 !important;
         color: #fff;
         border-radius: 10px;
         padding: 5px 10px;
@@ -107,12 +111,12 @@
         position: absolute;
         top: 0;
         width: 80%;
-        background-color: #b4296f7a !important;
+        background-color: #453c417a !important;
         border-radius: 5px;
       }
       .navbar-brand {
         text-decoration: none;
-        color: black;
+        color: rgb(250, 247, 247);
         padding-left: 20%;
         padding-right: 20%;
       }
@@ -131,7 +135,7 @@
               height="25"
               class="d-inline-block align-text-top"
             />
-            Softgirls
+            Las Chicas
           </a>
           <b><p id="escribiendo"></p></b>
         </div>
@@ -142,18 +146,19 @@
 
       <form id="form" action="">
         <input id="input" autocomplete="off" />
-        <button>enviar</button>
+        <button class="boton">enviar</button>
       </form>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      var socket = io();
+      var socket = io(); //istancia del cliente
 
+      //funcion para Mostrar los mensajes en el chat
       const mostrarMensajes = (msg) => {
-        var item = document.createElement("li");
+        var item = document.createElement("li"); //crea un nuevo elemnto li
         var mesajecolor = document.getElementById("messages");
-        item.textContent = msg.username + ": " + msg.text;
+        item.textContent = msg.username + ": " + msg.text; //establece su cont en el menj formateado
         const messageColor = getRandomColor(msg.username); // Obtener el color basado en el nombre de usuario
         item.style.backgroundColor = messageColor;
         // Aplicar la clase CSS adecuada al mensaje según el tipo de mensaje
@@ -173,17 +178,19 @@
       var input = document.getElementById("input");
       var userEscribiendo = document.getElementById("escribiendo");
 
-      // Solicita el nombre de usuario al conectarse
+      // Solicita el nombre de usuario al conectarse y lo almacena en la variable username
       var username = prompt("Ingresa tu nombre de usuario:");
       if (username) {
-        socket.username = username;
+        //solo va a continuar si coloca su nombre d euser
+        socket.username = username; //estables el nombe de user en la inst socket
         socket.emit(
+          //envia un msg al serv que el user se unio al chat
           "chat message",
           username + " se ha unido al chat.",
           "Sistema"
         );
       }
-
+      //evento para escuchar los cambios en el input
       input.addEventListener("input", function () {
         // Cuando el usuario comienza a escribir, emitir un evento "escribir" al servidor.
         socket.emit("escribir", true, socket.username);
@@ -191,41 +198,50 @@
         // Usar un temporizador para determinar cuándo el usuario ha dejado de escribir.
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(function () {
+          //establece un temporizador que emitira un ev al serv indicando que el user ha dejado de escribir despues de 100 milnisegundo
           socket.emit("escribir", false, socket.username);
-        }, 1000); // Cambia este valor según tus preferencias.
+        }, 1000);
       });
-      socket.on("escribiendo", (users) => {
-        userEscribiendo.innerHTML = "";
-
-        for (const [username, isTyping] of Object.entries(users)) {
-          if (username !== socket.username && isTyping) {
-            const userTyping = document.createElement("span");
-            userTyping.textContent = username + " está escribiendo...";
-            userEscribiendo.appendChild(userTyping);
+      //funcion para manejar que usuario esta escribiendo
+      socket.on("escribiendo", (users) => {//este controlador de even recibe actuali del serv sorbre que usruario estan escribiendo actualmente
+        userEscribiendo.innerHTML = ""; //limpia el contenido del elem p
+                                                                     //(users) es un objeto javscrip que tien un par de clav y valores para cad usuario que esta escribiendo
+        for (const [username, isTyping] of Object.entries(users)) { //itera sobre el obj users recibido del srvidor.la clave es el nombre , el valor es booleano que indic si el usr esta escribi
+          if (username !== socket.username && isTyping) {      //conprueba si el usr no es el mismo que el user actual y si el user esta escribiendo y si el user es el mismo no es nesesario mostra en la list de usuarios que estan escribiendo       
+            const userTyping = document.createElement("span"); //crea un elem de span
+            userTyping.textContent = username + " está escribiendo...";//establece el contenido del elem de span uniendo el nombreuser con el texto
+            userEscribiendo.appendChild(userTyping);//agrega el element span al elempnto parrafo
           }
         }
       });
-
+      
+      //controlador de eventos que escucha el evento envio en el elem form
       form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        if (input.value) {
-          socket.emit("chat message", input.value, socket.username); //enviar el nombre de usuario
-          input.value = "";
+        e.preventDefault(); //metodo para evitar que los chat se pierdan cuando se recarge la pagina
+        if (input.value) {//verifica si el camp de  entrada input esta vacio, si esta vacio el cod no  envia un mensaje de chat
+          socket.emit("chat message", input.value, socket.username); //envia un mensaje de chat al serv. y el mensaje consta del tex y el nombre de usuario
+          input.value = ""; //limpia el input para que el user pueda escribir nuevamente 
         }
         //para que se muestren los mensajes
-        socket.on("chat message", function (msg) {
+        socket.on("chat message", function (msg) { //cuando se recibe los msg se llama la funcion mostrarMensaje(msg)para mostra el mg del chat recibido
           mostrarMensajes(msg);
-
-          if (msg.username === "NombreUsuarioEspecifico") {
-            const lastMessage = messages.lastChild;
-            lastMessage.classList.add("highlighted-message");
+           //condicion para verificar si el mensaje es de un nombre de usr espefif
+          if (msg.username === "NombreUsuarioEspecifico") {//si elmsg es de un nom de usr espe resaltar el msg
+            const lastMessage = messages.lastChild;//si el mg es del nombre de user espf ,se recupera el elemento de mensaje más reciente 
+            lastMessage.classList.add("highlighted-message");//
           }
         });
       });
 
       //funcion para generar color aleartoriamente segun el usuario
       function getRandomColor(username) {
-        const colors = ["#ffb8ec", "#f8ffb8", "#e4fff9", "#D099E7", "#5396D8"];
+        const colors = [
+          "#453c417a",
+          "#f8ffb8",
+          "#e4fff9",
+          "#D099E7",
+          "#5396D8",
+        ];
         const index = username.charCodeAt(0) % colors.length;
         return colors[index];
       }
